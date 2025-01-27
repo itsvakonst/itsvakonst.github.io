@@ -1,0 +1,1088 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  
+  <title>MkDown.html</title>
+  
+</head>
+<body>
+  <p>1.. Условие: «Реализовать программу для выполнения следующих математических операций с целочисленным, байтовым и вещественным типами данных: сложение, вычитание, умножение, деление, деление по модулю (остаток), модуль числа, возведение в степень. Все данные вводятся с клавиатуры (класс Scanner, System.in, nextint).» По данному условию необходимо реализовать программу с интерактивным консольным меню, (т.е. вывод списка действий по цифрам. При этом при нажатии на цифру у нас должно выполняться определенное действие). При этом в программе данные пункты должны называться следующим образом:</p>
+<ul>
+<li>Вывести все таблицы из MySQL.</li>
+<li>Создать таблицу в MySQL.</li>
+<li>Сложение чисел, результат сохранить в MySQL с последующим выводом в консоль.</li>
+<li>Вычитание чисел, результат сохранить в MySQL с последующим выводом в консоль.</li>
+<li>Умножение чисел, результат сохранить в MySQL с последующим выводом в консоль.</li>
+<li>Деление чисел, результат сохранить в MySQL с последующим выводом в консоль.</li>
+<li>Деление чисел по модулю (остаток), результат сохранить в MySQL с последующим выводом в консоль.</li>
+<li>Возведение числа в модуль, результат сохранить в MySQL с последующим выводом в консоль.</li>
+<li>Возведение числа в степень, результат сохранить в MySQL с последующим выводом в консоль.</li>
+<li>Сохранить все данные (вышеполученные результаты) из MySQL в Excel и вывести на экран.<br />
+<a href="https://github.com/AliceAnd0/java_exam/tree/main/NumbersInDB">Решение 1 </a><br />
+<a href="https://github.com/Katerina0088/tiska/blob/master/1/MathOperations.java">Решение 2 </a></li>
+</ul>
+<pre><code>package com.<span class="hljs-property">example</span>.<span class="hljs-property">demo</span>;
+
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">sql</span>.*;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">util</span>.<span class="hljs-property">Scanner</span>;
+<span class="hljs-keyword">import</span> org.<span class="hljs-property">apache</span>.<span class="hljs-property">poi</span>.<span class="hljs-property">ss</span>.<span class="hljs-property">usermodel</span>.*;
+<span class="hljs-keyword">import</span> org.<span class="hljs-property">apache</span>.<span class="hljs-property">poi</span>.<span class="hljs-property">xssf</span>.<span class="hljs-property">usermodel</span>.<span class="hljs-property">XSSFWorkbook</span>;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">io</span>.<span class="hljs-property">FileOutputStream</span>;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">io</span>.<span class="hljs-property">IOException</span>;
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MathOperations</span> {
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-title class_">Connection</span> <span class="hljs-title function_">connect</span>(<span class="hljs-params"></span>) {
+        <span class="hljs-title class_">String</span> url = <span class="hljs-string">&quot;jdbc:h2:~/testdb&quot;</span>; <span class="hljs-comment">// Путь к базе данных H2</span>
+        <span class="hljs-title class_">Connection</span> conn = <span class="hljs-literal">null</span>;
+        <span class="hljs-keyword">try</span> {
+            conn = <span class="hljs-title class_">DriverManager</span>.<span class="hljs-title function_">getConnection</span>(url, <span class="hljs-string">&quot;sa&quot;</span>, <span class="hljs-string">&quot;&quot;</span>);
+        } <span class="hljs-keyword">catch</span> (SQLException e) {
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(e.<span class="hljs-title function_">getMessage</span>());
+        }
+        <span class="hljs-keyword">return</span> conn;
+    }
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">createTable</span>(<span class="hljs-params">Connection conn</span>) {
+        <span class="hljs-title class_">String</span> sql = <span class="hljs-string">&quot;CREATE TABLE IF NOT EXISTS Results (id INT AUTO_INCREMENT PRIMARY KEY, operation VARCHAR(255), result DOUBLE)&quot;</span>;
+        <span class="hljs-keyword">try</span> (<span class="hljs-title class_">Statement</span> stmt = conn.<span class="hljs-title function_">createStatement</span>()) {
+            stmt.<span class="hljs-title function_">execute</span>(sql);
+        } <span class="hljs-keyword">catch</span> (SQLException e) {
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(e.<span class="hljs-title function_">getMessage</span>());
+        }
+    }
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">saveResult</span>(<span class="hljs-params">Connection conn, <span class="hljs-built_in">String</span> operation, double result</span>) {
+        <span class="hljs-title class_">String</span> sql = <span class="hljs-string">&quot;INSERT INTO Results(operation, result) VALUES(?, ?)&quot;</span>;
+        <span class="hljs-keyword">try</span> (<span class="hljs-title class_">PreparedStatement</span> pstmt = conn.<span class="hljs-title function_">prepareStatement</span>(sql)) {
+            pstmt.<span class="hljs-title function_">setString</span>(<span class="hljs-number">1</span>, operation);
+            pstmt.<span class="hljs-title function_">setDouble</span>(<span class="hljs-number">2</span>, result);
+            pstmt.<span class="hljs-title function_">executeUpdate</span>();
+        } <span class="hljs-keyword">catch</span> (SQLException e) {
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(e.<span class="hljs-title function_">getMessage</span>());
+        }
+    }
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">displayResults</span>(<span class="hljs-params">Connection conn</span>) {
+        <span class="hljs-title class_">String</span> sql = <span class="hljs-string">&quot;SELECT * FROM Results&quot;</span>;
+        <span class="hljs-keyword">try</span> (<span class="hljs-title class_">Statement</span> stmt = conn.<span class="hljs-title function_">createStatement</span>();
+             <span class="hljs-title class_">ResultSet</span> rs = stmt.<span class="hljs-title function_">executeQuery</span>(sql)) {
+            <span class="hljs-keyword">while</span> (rs.<span class="hljs-title function_">next</span>()) {
+                <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;ID: &quot;</span> + rs.<span class="hljs-title function_">getInt</span>(<span class="hljs-string">&quot;id&quot;</span>) + <span class="hljs-string">&quot;, Operation: &quot;</span> + rs.<span class="hljs-title function_">getString</span>(<span class="hljs-string">&quot;operation&quot;</span>) + <span class="hljs-string">&quot;, Result: &quot;</span> + rs.<span class="hljs-title function_">getDouble</span>(<span class="hljs-string">&quot;result&quot;</span>));
+            }
+        } <span class="hljs-keyword">catch</span> (SQLException e) {
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(e.<span class="hljs-title function_">getMessage</span>());
+        }
+    }
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">exportToExcel</span>(<span class="hljs-params">Connection conn</span>) {
+        <span class="hljs-title class_">String</span> sql = <span class="hljs-string">&quot;SELECT * FROM Results&quot;</span>;
+        <span class="hljs-keyword">try</span> (<span class="hljs-title class_">Statement</span> stmt = conn.<span class="hljs-title function_">createStatement</span>();
+             <span class="hljs-title class_">ResultSet</span> rs = stmt.<span class="hljs-title function_">executeQuery</span>(sql);
+             <span class="hljs-title class_">Workbook</span> workbook = <span class="hljs-keyword">new</span> <span class="hljs-title function_">XSSFWorkbook</span>()) {
+
+            <span class="hljs-title class_">Sheet</span> sheet = workbook.<span class="hljs-title function_">createSheet</span>(<span class="hljs-string">&quot;Results&quot;</span>);
+            <span class="hljs-title class_">Row</span> headerRow = sheet.<span class="hljs-title function_">createRow</span>(<span class="hljs-number">0</span>);
+            headerRow.<span class="hljs-title function_">createCell</span>(<span class="hljs-number">0</span>).<span class="hljs-title function_">setCellValue</span>(<span class="hljs-string">&quot;ID&quot;</span>);
+            headerRow.<span class="hljs-title function_">createCell</span>(<span class="hljs-number">1</span>).<span class="hljs-title function_">setCellValue</span>(<span class="hljs-string">&quot;Operation&quot;</span>);
+            headerRow.<span class="hljs-title function_">createCell</span>(<span class="hljs-number">2</span>).<span class="hljs-title function_">setCellValue</span>(<span class="hljs-string">&quot;Result&quot;</span>);
+
+            int rowNum = <span class="hljs-number">1</span>;
+            <span class="hljs-keyword">while</span> (rs.<span class="hljs-title function_">next</span>()) {
+                <span class="hljs-title class_">Row</span> row = sheet.<span class="hljs-title function_">createRow</span>(rowNum++);
+                row.<span class="hljs-title function_">createCell</span>(<span class="hljs-number">0</span>).<span class="hljs-title function_">setCellValue</span>(rs.<span class="hljs-title function_">getInt</span>(<span class="hljs-string">&quot;id&quot;</span>));
+                row.<span class="hljs-title function_">createCell</span>(<span class="hljs-number">1</span>).<span class="hljs-title function_">setCellValue</span>(rs.<span class="hljs-title function_">getString</span>(<span class="hljs-string">&quot;operation&quot;</span>));
+                row.<span class="hljs-title function_">createCell</span>(<span class="hljs-number">2</span>).<span class="hljs-title function_">setCellValue</span>(rs.<span class="hljs-title function_">getDouble</span>(<span class="hljs-string">&quot;result&quot;</span>));
+            }
+
+            <span class="hljs-keyword">try</span> (<span class="hljs-title class_">FileOutputStream</span> fileOut = <span class="hljs-keyword">new</span> <span class="hljs-title class_">FileOutputStream</span>(<span class="hljs-string">&quot;Results.xlsx&quot;</span>)) {
+                workbook.<span class="hljs-title function_">write</span>(fileOut);
+            }
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Данные успешно экспортированы в Results.xlsx&quot;</span>);
+        } <span class="hljs-keyword">catch</span> (SQLException | IOException e) {
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(e.<span class="hljs-title function_">getMessage</span>());
+        }
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">main</span>(<span class="hljs-params"><span class="hljs-built_in">String</span>[] args</span>) {
+        <span class="hljs-title class_">Scanner</span> scanner = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Scanner</span>(<span class="hljs-title class_">System</span>.<span class="hljs-property">in</span>);
+        <span class="hljs-title class_">Connection</span> conn = <span class="hljs-title function_">connect</span>();
+        <span class="hljs-title function_">createTable</span>(conn);
+
+        <span class="hljs-keyword">while</span> (<span class="hljs-literal">true</span>) {
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Выберите действие:&quot;</span>);
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;1. Вывести все таблицы из H2&quot;</span>);
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;2. Создать таблицу в H2&quot;</span>);
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;3. Сложение чисел&quot;</span>);
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;4. Вычитание чисел&quot;</span>);
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;5. Умножение чисел&quot;</span>);
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;6. Деление чисел&quot;</span>);
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;7. Деление по модулю&quot;</span>);
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;8. Возведение в степень по модулю&quot;</span>);
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;9. Возведение в степень&quot;</span>);
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;10. Экспортировать данные в Excel&quot;</span>);
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;11. Выход&quot;</span>);
+
+            int choice = scanner.<span class="hljs-title function_">nextInt</span>();
+            <span class="hljs-keyword">if</span> (choice == <span class="hljs-number">11</span>) <span class="hljs-keyword">break</span>;
+
+            double num1, num2, result = <span class="hljs-number">0</span>;
+            <span class="hljs-title class_">String</span> operation = <span class="hljs-string">&quot;&quot;</span>;
+
+            <span class="hljs-keyword">switch</span> (choice) {
+                <span class="hljs-keyword">case</span> <span class="hljs-number">1</span>:
+                    <span class="hljs-title function_">displayResults</span>(conn);
+                    <span class="hljs-keyword">break</span>;
+                <span class="hljs-keyword">case</span> <span class="hljs-number">2</span>:
+                    <span class="hljs-title function_">createTable</span>(conn);
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Таблица создана.&quot;</span>);
+                    <span class="hljs-keyword">break</span>;
+                <span class="hljs-keyword">case</span> <span class="hljs-number">3</span>:
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите первое число: &quot;</span>);
+                    num1 = scanner.<span class="hljs-title function_">nextDouble</span>();
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите второе число: &quot;</span>);
+                    num2 = scanner.<span class="hljs-title function_">nextDouble</span>();
+                    result = num1 + num2;
+                    operation = <span class="hljs-string">&quot;Сложение&quot;</span>;
+                    <span class="hljs-keyword">break</span>;
+                <span class="hljs-keyword">case</span> <span class="hljs-number">4</span>:
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите первое число: &quot;</span>);
+                    num1 = scanner.<span class="hljs-title function_">nextDouble</span>();
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите второе число: &quot;</span>);
+                    num2 = scanner.<span class="hljs-title function_">nextDouble</span>();
+                    result = num1 - num2;
+                    operation = <span class="hljs-string">&quot;Вычитание&quot;</span>;
+                    <span class="hljs-keyword">break</span>;
+                <span class="hljs-keyword">case</span> <span class="hljs-number">5</span>:
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите первое число: &quot;</span>);
+                    num1 = scanner.<span class="hljs-title function_">nextDouble</span>();
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите второе число: &quot;</span>);
+                    num2 = scanner.<span class="hljs-title function_">nextDouble</span>();
+                    result = num1 * num2;
+                    operation = <span class="hljs-string">&quot;Умножение&quot;</span>;
+                    <span class="hljs-keyword">break</span>;
+                <span class="hljs-keyword">case</span> <span class="hljs-number">6</span>:
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите первое число: &quot;</span>);
+                    num1 = scanner.<span class="hljs-title function_">nextDouble</span>();
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите второе число: &quot;</span>);
+                    num2 = scanner.<span class="hljs-title function_">nextDouble</span>();
+                    result = num1 / num2;
+                    operation = <span class="hljs-string">&quot;Деление&quot;</span>;
+                    <span class="hljs-keyword">break</span>;
+                <span class="hljs-keyword">case</span> <span class="hljs-number">7</span>:
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите первое число: &quot;</span>);
+                    num1 = scanner.<span class="hljs-title function_">nextDouble</span>();
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите второе число: &quot;</span>);
+                    num2 = scanner.<span class="hljs-title function_">nextDouble</span>();
+                    result = num1 % num2;
+                    operation = <span class="hljs-string">&quot;Деление по модулю&quot;</span>;
+                    <span class="hljs-keyword">break</span>;
+                <span class="hljs-keyword">case</span> <span class="hljs-number">8</span>:
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите число: &quot;</span>);
+                    num1 = scanner.<span class="hljs-title function_">nextDouble</span>();
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите степень: &quot;</span>);
+                    num2 = scanner.<span class="hljs-title function_">nextDouble</span>();
+                    result = <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">pow</span>(num1, num2) % num2;
+                    operation = <span class="hljs-string">&quot;Возведение в степень по модулю&quot;</span>;
+                    <span class="hljs-keyword">break</span>;
+                <span class="hljs-keyword">case</span> <span class="hljs-number">9</span>:
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите число: &quot;</span>);
+                    num1 = scanner.<span class="hljs-title function_">nextDouble</span>();
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите степень: &quot;</span>);
+                    num2 = scanner.<span class="hljs-title function_">nextDouble</span>();
+                    result = <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">pow</span>(num1, num2);
+                    operation = <span class="hljs-string">&quot;Возведение в степень&quot;</span>;
+                    <span class="hljs-keyword">break</span>;
+                <span class="hljs-keyword">case</span> <span class="hljs-number">10</span>:
+                    <span class="hljs-title function_">exportToExcel</span>(conn);
+                    <span class="hljs-title function_">displayResults</span>(conn);
+
+                    <span class="hljs-keyword">break</span>;
+                <span class="hljs-attr">default</span>:
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Неверный выбор. Попробуйте снова.&quot;</span>);
+                    <span class="hljs-keyword">continue</span>;
+            }
+
+
+            <span class="hljs-title function_">saveResult</span>(conn, operation, result);
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Результат: &quot;</span> + result);
+        }
+
+        <span class="hljs-keyword">try</span> {
+            conn.<span class="hljs-title function_">close</span>();
+        } <span class="hljs-keyword">catch</span> (SQLException e) {
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(e.<span class="hljs-title function_">getMessage</span>());
+        }
+        scanner.<span class="hljs-title function_">close</span>();
+    }
+}</code></pre>
+<pre><code><span class="hljs-meta">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">project</span> <span class="hljs-attr">xmlns</span>=<span class="hljs-string">&quot;http://maven.apache.org/POM/4.0.0&quot;</span>
+         <span class="hljs-attr">xmlns:xsi</span>=<span class="hljs-string">&quot;http://www.w3.org/2001/XMLSchema-instance&quot;</span>
+         <span class="hljs-attr">xsi:schemaLocation</span>=<span class="hljs-string">&quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&quot;</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">modelVersion</span>&gt;</span>4.0.0<span class="hljs-tag">&lt;/<span class="hljs-name">modelVersion</span>&gt;</span>
+
+    <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.example<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>task_23<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>1.0-SNAPSHOT<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
+
+    <span class="hljs-tag">&lt;<span class="hljs-name">properties</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">maven.compiler.source</span>&gt;</span>22<span class="hljs-tag">&lt;/<span class="hljs-name">maven.compiler.source</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">maven.compiler.target</span>&gt;</span>22<span class="hljs-tag">&lt;/<span class="hljs-name">maven.compiler.target</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">project.build.sourceEncoding</span>&gt;</span>UTF-8<span class="hljs-tag">&lt;/<span class="hljs-name">project.build.sourceEncoding</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">properties</span>&gt;</span>
+
+    <span class="hljs-tag">&lt;<span class="hljs-name">dependencies</span>&gt;</span>
+            <span class="hljs-comment">&lt;!-- https://mvnrepository.com/artifact/org.postgresql/postgresql --&gt;</span>
+
+            <span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>com.h2database<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>h2<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>2.3.232<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
+            <span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span>
+
+            <span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>javax.persistence<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>javax.persistence-api<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>2.2<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
+            <span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span>
+
+            <span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.springframework.boot<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>spring-boot-starter-data-jpa<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>2.7.12<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
+            <span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.apache.poi<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>poi<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>5.2.3<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
+            <span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">dependency</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">groupId</span>&gt;</span>org.apache.poi<span class="hljs-tag">&lt;/<span class="hljs-name">groupId</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">artifactId</span>&gt;</span>poi-ooxml<span class="hljs-tag">&lt;/<span class="hljs-name">artifactId</span>&gt;</span>
+                <span class="hljs-tag">&lt;<span class="hljs-name">version</span>&gt;</span>5.2.3<span class="hljs-tag">&lt;/<span class="hljs-name">version</span>&gt;</span>
+            <span class="hljs-tag">&lt;/<span class="hljs-name">dependency</span>&gt;</span>
+
+        <span class="hljs-tag">&lt;/<span class="hljs-name">dependencies</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">project</span>&gt;</span></code></pre>
+<p>2.. Напишите программу, в которой из строки "I have 3 cats, 4 dogs, and 1 turtle" отбираются цифры. Из этих цифр формируется массив.<br />
+<a href="https://github.com/polinatut/exem_java/blob/main/ex_2/ExtractNumbers.java">Решение</a></p>
+<pre><code>package com.<span class="hljs-property">example</span>.<span class="hljs-property">demo</span>;
+
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">util</span>.<span class="hljs-property">ArrayList</span>;
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">ExtractNumbers</span> {
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">main</span>(<span class="hljs-params"><span class="hljs-built_in">String</span>[] args</span>) {
+        <span class="hljs-title class_">String</span> input = <span class="hljs-string">&quot;I have 3 cats, 4 dogs, and 1 turtle&quot;</span>;
+
+        <span class="hljs-title class_">ArrayList</span>&lt;<span class="hljs-title class_">Integer</span>&gt; numbers = <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayList</span>&lt;&gt;();
+
+        <span class="hljs-keyword">for</span> (char ch : input.<span class="hljs-title function_">toCharArray</span>()) {
+            <span class="hljs-keyword">if</span> (<span class="hljs-title class_">Character</span>.<span class="hljs-title function_">isDigit</span>(ch)) {
+                numbers.<span class="hljs-title function_">add</span>(<span class="hljs-title class_">Character</span>.<span class="hljs-title function_">getNumericValue</span>(ch));
+            }
+        }
+
+        int[] resultArray = numbers.<span class="hljs-title function_">stream</span>().<span class="hljs-title function_">mapToInt</span>(<span class="hljs-title class_">Integer</span>::intValue).<span class="hljs-title function_">toArray</span>();
+
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Извлеченные числа: &quot;</span>);
+        <span class="hljs-keyword">for</span> (int num : resultArray) {
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(num + <span class="hljs-string">&quot; &quot;</span>);
+        }
+    }
+}</code></pre>
+<p>3.. Разработайте программу, которая выводит в консоль все цифры, входящие в натуральное число n. К примеру, если дано число 2359, то в консоль выводятся отдельно числа 2, 3, 5, 9.<br />
+<a href="https://github.com/mirrrler/task3">Решение</a></p>
+<pre><code>package com.<span class="hljs-property">example</span>.<span class="hljs-property">demo</span>;
+
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">util</span>.<span class="hljs-property">Scanner</span>;
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">Main</span> {
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">main</span>(<span class="hljs-params"><span class="hljs-built_in">String</span>[] args</span>) {
+        <span class="hljs-title class_">Scanner</span> scanner = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Scanner</span>(<span class="hljs-title class_">System</span>.<span class="hljs-property">in</span>);
+        <span class="hljs-title class_">String</span> input;
+
+        <span class="hljs-keyword">while</span> (<span class="hljs-literal">true</span>) {
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите натуральное число: &quot;</span>);
+            input = scanner.<span class="hljs-title function_">nextLine</span>(); <span class="hljs-comment">// Считываем ввод как строку</span>
+
+            <span class="hljs-comment">// Проверяем, что строка состоит только из цифр</span>
+            <span class="hljs-keyword">if</span> (input.<span class="hljs-title function_">matches</span>(<span class="hljs-string">&quot;\\d+&quot;</span>)) {
+                <span class="hljs-keyword">break</span>; <span class="hljs-comment">// Если строка валидна, выходим из цикла</span>
+            } <span class="hljs-keyword">else</span> {
+                <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Ошибка ввода. Пожалуйста, введите натуральное число.&quot;</span>);
+            }
+        }
+
+        <span class="hljs-comment">// Вывод цифр числа</span>
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Цифры в числе &quot;</span> + input + <span class="hljs-string">&quot;:&quot;</span>);
+        <span class="hljs-keyword">for</span> (char digit : input.<span class="hljs-title function_">toCharArray</span>()) {
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(digit);
+        }
+
+        scanner.<span class="hljs-title function_">close</span>();
+    }
+}</code></pre>
+<p>4.. Написать калькулятор для строковых выражений вида "<число> <операция> <число>", где <число> - положительное целое число меньшее 10, записанное словами, например, "четыре", <арифметическая операция> - одна из операций "плюс", "минус", "умножить". Результат выполнения операции вернуть в виде текстового представления числа. Пример: "пять плюс четыре" --&gt; "девять".<br />
+<a href="https://github.com/dariadegt/java_exam/blob/main/Task_4.java">Решение</a></p>
+<pre><code><span class="hljs-keyword">import</span> java.<span class="hljs-property">util</span>.<span class="hljs-property">HashMap</span>;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">util</span>.<span class="hljs-property">Map</span>;
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">Task_4</span> {
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> final <span class="hljs-title class_">Map</span>&lt;<span class="hljs-title class_">String</span>, <span class="hljs-title class_">Integer</span>&gt; numberMap = <span class="hljs-keyword">new</span> <span class="hljs-title class_">HashMap</span>&lt;&gt;();
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> final <span class="hljs-title class_">Map</span>&lt;<span class="hljs-title class_">Integer</span>, <span class="hljs-title class_">String</span>&gt; reverseNumberMap = <span class="hljs-keyword">new</span> <span class="hljs-title class_">HashMap</span>&lt;&gt;();
+
+    <span class="hljs-keyword">static</span> {
+        <span class="hljs-title class_">String</span>[] numbers = {<span class="hljs-string">&quot;ноль&quot;</span>, <span class="hljs-string">&quot;один&quot;</span>, <span class="hljs-string">&quot;два&quot;</span>, <span class="hljs-string">&quot;три&quot;</span>, <span class="hljs-string">&quot;четыре&quot;</span>, <span class="hljs-string">&quot;пять&quot;</span>, <span class="hljs-string">&quot;шесть&quot;</span>, <span class="hljs-string">&quot;семь&quot;</span>, <span class="hljs-string">&quot;восемь&quot;</span>, <span class="hljs-string">&quot;девять&quot;</span>};
+        <span class="hljs-keyword">for</span> (int i = <span class="hljs-number">0</span>; i &lt; numbers.<span class="hljs-property">length</span>; i++) {
+            numberMap.<span class="hljs-title function_">put</span>(numbers[i], i);
+            reverseNumberMap.<span class="hljs-title function_">put</span>(i, numbers[i]);
+        }
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-title class_">String</span> <span class="hljs-title function_">calculate</span>(<span class="hljs-params"><span class="hljs-built_in">String</span> expression</span>) {
+        <span class="hljs-title class_">String</span>[] parts = expression.<span class="hljs-title function_">split</span>(<span class="hljs-string">&quot; &quot;</span>);
+        <span class="hljs-keyword">if</span> (parts.<span class="hljs-property">length</span> != <span class="hljs-number">3</span>) {
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalArgumentException</span>(<span class="hljs-string">&quot;Неверный формат выражения&quot;</span>);
+        }
+
+        <span class="hljs-title class_">Integer</span> num1 = numberMap.<span class="hljs-title function_">get</span>(parts[<span class="hljs-number">0</span>]);
+        <span class="hljs-title class_">String</span> operation = parts[<span class="hljs-number">1</span>];
+        <span class="hljs-title class_">Integer</span> num2 = numberMap.<span class="hljs-title function_">get</span>(parts[<span class="hljs-number">2</span>]);
+
+        <span class="hljs-keyword">if</span> (num1 == <span class="hljs-literal">null</span> || num2 == <span class="hljs-literal">null</span>) {
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalArgumentException</span>(<span class="hljs-string">&quot;Неверное число в выражении&quot;</span>);
+        }
+
+        int result;
+        <span class="hljs-keyword">switch</span> (operation) {
+            <span class="hljs-keyword">case</span> <span class="hljs-string">&quot;плюс&quot;</span>:
+                result = num1 + num2;
+                <span class="hljs-keyword">break</span>;
+            <span class="hljs-keyword">case</span> <span class="hljs-string">&quot;минус&quot;</span>:
+                result = num1 - num2;
+                <span class="hljs-keyword">break</span>;
+            <span class="hljs-keyword">case</span> <span class="hljs-string">&quot;умножить&quot;</span>:
+                result = num1 * num2;
+                <span class="hljs-keyword">break</span>;
+            <span class="hljs-attr">default</span>:
+                <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalArgumentException</span>(<span class="hljs-string">&quot;Неверная операция&quot;</span>);
+        }
+
+        <span class="hljs-keyword">return</span> reverseNumberMap.<span class="hljs-title function_">getOrDefault</span>(result, <span class="hljs-string">&quot;неизвестно&quot;</span>);
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">main</span>(<span class="hljs-params"><span class="hljs-built_in">String</span>[] args</span>) {
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-title function_">calculate</span>(<span class="hljs-string">&quot;пять плюс четыре&quot;</span>));  <span class="hljs-comment">// девять</span>
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-title function_">calculate</span>(<span class="hljs-string">&quot;два умножить три&quot;</span>));  <span class="hljs-comment">// шесть</span>
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-title function_">calculate</span>(<span class="hljs-string">&quot;семь минус один&quot;</span>));   <span class="hljs-comment">// шесть</span>
+    }
+}</code></pre>
+<p>5.. Напишите программную реализацию бинарного дерева поиска.<br />
+<a href="https://github.com/gavalone/for_work/blob/main/src/Task_5.java">Решение</a></p>
+<pre><code>package com.<span class="hljs-property">example</span>.<span class="hljs-property">demo</span>;
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">Tree</span> {
+    int value;
+    <span class="hljs-title class_">Tree</span> left;
+    <span class="hljs-title class_">Tree</span> right;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-title class_">Tree</span>(int value) {
+        <span class="hljs-variable language_">this</span>.<span class="hljs-property">value</span> = value;
+        left = <span class="hljs-literal">null</span>;
+        right = <span class="hljs-literal">null</span>;
+    }
+}</code></pre>
+<pre><code>package com.<span class="hljs-property">example</span>.<span class="hljs-property">demo</span>;
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">OperationTree</span> {
+    <span class="hljs-title class_">Tree</span> root;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-title class_">OperationTree</span>() {
+        <span class="hljs-variable language_">this</span>.<span class="hljs-property">root</span> = <span class="hljs-literal">null</span>;
+    }
+
+    <span class="hljs-built_in">void</span> <span class="hljs-title function_">insert</span>(<span class="hljs-params">int value</span>) {
+        root = <span class="hljs-title function_">insertRec</span>(root, value);
+    }
+
+    <span class="hljs-title class_">Tree</span> <span class="hljs-title function_">insertRec</span>(<span class="hljs-params">Tree root, int value</span>) {
+        <span class="hljs-keyword">if</span> (root == <span class="hljs-literal">null</span>) {
+            root = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Tree</span>(value);
+            <span class="hljs-keyword">return</span> root;
+        }
+        <span class="hljs-keyword">if</span> (value &lt; root.<span class="hljs-property">value</span>) {
+            root.<span class="hljs-property">left</span> = <span class="hljs-title function_">insertRec</span>(root.<span class="hljs-property">left</span>, value);
+        }
+        <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (value &gt; root.<span class="hljs-property">value</span>) {
+            root.<span class="hljs-property">right</span> = <span class="hljs-title function_">insertRec</span>(root.<span class="hljs-property">right</span>, value);
+        }
+        <span class="hljs-keyword">return</span> root;
+    }
+
+    <span class="hljs-built_in">void</span> <span class="hljs-title function_">delete</span>(<span class="hljs-params">int value</span>) {
+        root = <span class="hljs-title function_">deleteRec</span>(root, value);
+    }
+    <span class="hljs-title class_">Tree</span> <span class="hljs-title function_">deleteRec</span>(<span class="hljs-params">Tree root, int value</span>) {
+        <span class="hljs-keyword">if</span> (root == <span class="hljs-literal">null</span>) {
+            <span class="hljs-keyword">return</span> <span class="hljs-literal">null</span>;
+        }
+        <span class="hljs-keyword">if</span> (value &lt; root.<span class="hljs-property">value</span>)
+            root.<span class="hljs-property">left</span> = <span class="hljs-title function_">deleteRec</span>(root.<span class="hljs-property">left</span>, value);
+        <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (value &gt; root.<span class="hljs-property">value</span>)
+            root.<span class="hljs-property">right</span> = <span class="hljs-title function_">deleteRec</span>(root.<span class="hljs-property">right</span>, value);
+        <span class="hljs-keyword">else</span>{
+            <span class="hljs-keyword">if</span> (root.<span class="hljs-property">left</span> == <span class="hljs-literal">null</span>)
+                <span class="hljs-keyword">return</span> root.<span class="hljs-property">right</span>;
+            <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (root.<span class="hljs-property">right</span> == <span class="hljs-literal">null</span>)
+                <span class="hljs-keyword">return</span> root.<span class="hljs-property">left</span>;
+            root.<span class="hljs-property">value</span> = <span class="hljs-title function_">minValue</span>(root.<span class="hljs-property">right</span>);
+            root.<span class="hljs-property">right</span> = <span class="hljs-title function_">deleteRec</span>(root.<span class="hljs-property">right</span>, root.<span class="hljs-property">value</span>);
+        }
+        <span class="hljs-keyword">return</span> root;
+    }
+
+    int <span class="hljs-title function_">minValue</span>(<span class="hljs-params">Tree root</span>) {
+        int minValue = root.<span class="hljs-property">value</span>;
+        <span class="hljs-keyword">while</span> (root.<span class="hljs-property">left</span> != <span class="hljs-literal">null</span>) {
+            minValue = root.<span class="hljs-property">left</span>.<span class="hljs-property">value</span>;
+            root = root.<span class="hljs-property">left</span>;
+        }
+        <span class="hljs-keyword">return</span> minValue;
+    }
+
+    <span class="hljs-built_in">boolean</span> <span class="hljs-title function_">search</span>(<span class="hljs-params">int value</span>) {
+        <span class="hljs-keyword">return</span> <span class="hljs-title function_">searchRec</span>(root, value);
+    }
+
+    <span class="hljs-built_in">boolean</span> <span class="hljs-title function_">searchRec</span>(<span class="hljs-params">Tree root, int value</span>) {
+        <span class="hljs-keyword">if</span> (root == <span class="hljs-literal">null</span>)
+            <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;
+        <span class="hljs-keyword">if</span> (root.<span class="hljs-property">value</span> == value)
+            <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;
+        <span class="hljs-keyword">if</span> (root.<span class="hljs-property">value</span> &lt; value)
+            <span class="hljs-keyword">return</span> <span class="hljs-title function_">searchRec</span>(root.<span class="hljs-property">right</span>, value);
+        <span class="hljs-keyword">return</span> <span class="hljs-title function_">searchRec</span>(root.<span class="hljs-property">left</span>, value);
+    }
+
+    <span class="hljs-built_in">void</span> <span class="hljs-title function_">inOrder</span>(<span class="hljs-params"></span>) {
+        <span class="hljs-title function_">inOrderRec</span>(root);
+    }
+
+    <span class="hljs-built_in">void</span> <span class="hljs-title function_">inOrderRec</span>(<span class="hljs-params">Tree root</span>) {
+        <span class="hljs-keyword">if</span> (root != <span class="hljs-literal">null</span>) {
+            <span class="hljs-title function_">inOrderRec</span>(root.<span class="hljs-property">left</span>);
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(root.<span class="hljs-property">value</span> + <span class="hljs-string">&quot; &quot;</span>);
+            <span class="hljs-title function_">inOrderRec</span>(root.<span class="hljs-property">right</span>);
+        }
+    }
+}</code></pre>
+<pre><code>package com.<span class="hljs-property">example</span>.<span class="hljs-property">demo</span>;
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">Task_5</span> {
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">main</span>(<span class="hljs-params"><span class="hljs-built_in">String</span>[] args</span>) {
+        <span class="hljs-title class_">OperationTree</span> tree = <span class="hljs-keyword">new</span> <span class="hljs-title class_">OperationTree</span>();
+
+        tree.<span class="hljs-title function_">insert</span>(<span class="hljs-number">1</span>);
+        tree.<span class="hljs-title function_">insert</span>(<span class="hljs-number">2</span>);
+        tree.<span class="hljs-title function_">insert</span>(<span class="hljs-number">3</span>);
+        tree.<span class="hljs-title function_">insert</span>(<span class="hljs-number">4</span>);
+        tree.<span class="hljs-title function_">insert</span>(<span class="hljs-number">5</span>);
+        tree.<span class="hljs-title function_">insert</span>(<span class="hljs-number">6</span>);
+
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Обход дерева: &quot;</span>);
+        tree.<span class="hljs-title function_">inOrder</span>();
+
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;\nПоиск 5: &quot;</span> + tree.<span class="hljs-title function_">search</span>(<span class="hljs-number">5</span>));
+
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Удаление 4: &quot;</span>);
+        tree.<span class="hljs-title function_">delete</span>(<span class="hljs-number">4</span>);
+        tree.<span class="hljs-title function_">inOrder</span>();
+    }
+}</code></pre>
+<p>6.. Разработайте программу, которая выводит буквы английского алфавита, используя цикл while в MySQL/PostgreSQL.<br />
+<a href="https://github.com/bshkrrr/java_exam/blob/main/src/main/java/com/example/demo/Alph6.java">Решение</a></p>
+<pre><code>package com.<span class="hljs-property">example</span>.<span class="hljs-property">demo</span>;
+
+<span class="hljs-keyword">import</span> org.<span class="hljs-property">springframework</span>.<span class="hljs-property">boot</span>.<span class="hljs-property">autoconfigure</span>.<span class="hljs-property">SpringBootApplication</span>;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">sql</span>.<span class="hljs-property">Connection</span>;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">sql</span>.<span class="hljs-property">DriverManager</span>;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">sql</span>.<span class="hljs-property">PreparedStatement</span>;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">sql</span>.<span class="hljs-property">Statement</span>;
+
+<span class="hljs-meta">@SpringBootApplication</span>
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">Alph6</span> {
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">main</span>(<span class="hljs-params"><span class="hljs-built_in">String</span>[] args</span>) {
+        <span class="hljs-title class_">String</span> jdbcUrl = <span class="hljs-string">&quot;jdbc:h2:mem:testdb&quot;</span>;
+        <span class="hljs-title class_">String</span> username = <span class="hljs-string">&quot;sa&quot;</span>;
+        <span class="hljs-title class_">String</span> password = <span class="hljs-string">&quot;&quot;</span>;
+
+        <span class="hljs-keyword">try</span> (<span class="hljs-title class_">Connection</span> connection = <span class="hljs-title class_">DriverManager</span>.<span class="hljs-title function_">getConnection</span>(jdbcUrl, username, password)) {
+            <span class="hljs-title class_">String</span> createTableSQL = <span class="hljs-string">&quot;CREATE TABLE Alphabet (id INT AUTO_INCREMENT PRIMARY KEY, letter CHAR(1))&quot;</span>;
+            <span class="hljs-keyword">try</span> (<span class="hljs-title class_">Statement</span> statement = connection.<span class="hljs-title function_">createStatement</span>()) {
+                statement.<span class="hljs-title function_">execute</span>(createTableSQL);
+            }
+
+            <span class="hljs-title class_">String</span> insertSQL = <span class="hljs-string">&quot;INSERT INTO Alphabet (letter) VALUES (?)&quot;</span>;
+            <span class="hljs-keyword">try</span> (<span class="hljs-title class_">PreparedStatement</span> preparedStatement = connection.<span class="hljs-title function_">prepareStatement</span>(insertSQL)) {
+                char letter = <span class="hljs-string">&#x27;A&#x27;</span>;
+                <span class="hljs-keyword">while</span> (letter &lt;= <span class="hljs-string">&#x27;Z&#x27;</span>) {
+                    preparedStatement.<span class="hljs-title function_">setString</span>(<span class="hljs-number">1</span>, <span class="hljs-title class_">String</span>.<span class="hljs-title function_">valueOf</span>(letter));
+                    preparedStatement.<span class="hljs-title function_">executeUpdate</span>();
+                    letter++;
+                }
+            }
+
+            <span class="hljs-title class_">String</span> selectSQL = <span class="hljs-string">&quot;SELECT * FROM Alphabet&quot;</span>;
+            <span class="hljs-keyword">try</span> (<span class="hljs-title class_">Statement</span> statement = connection.<span class="hljs-title function_">createStatement</span>();
+                 <span class="hljs-keyword">var</span> resultSet = statement.<span class="hljs-title function_">executeQuery</span>(selectSQL)) {
+                <span class="hljs-keyword">while</span> (resultSet.<span class="hljs-title function_">next</span>()) {
+                    <span class="hljs-title class_">String</span> letter = resultSet.<span class="hljs-title function_">getString</span>(<span class="hljs-string">&quot;letter&quot;</span>);
+                    <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(letter);
+                }
+            }
+
+        } <span class="hljs-keyword">catch</span> (<span class="hljs-title class_">Exception</span> e) {
+            e.<span class="hljs-title function_">printStackTrace</span>();
+        }
+    }
+}</code></pre>
+<p>7.. Напишите программу, которая будет выводить в консоль введенное слово 6 раз и сохранять в MySQL/PostgreSQL.<br />
+<a href="https://github.com/flamingo99900/JavaEkz/tree/task_7">Решение</a> </p>
+<pre><code>package com.example.demo;
+
+import java.sql.*;
+import java.util.Scanner;
+
+public class WordSaver {
+
+    private static Connection <span class="hljs-function"><span class="hljs-title">connect</span></span>() {
+        String url = <span class="hljs-string">&quot;jdbc:h2:mem:testdb&quot;</span>;
+        String user = <span class="hljs-string">&quot;sa&quot;</span>;
+        String password = <span class="hljs-string">&quot;&quot;</span>;
+        Connection conn = null;
+
+        try {
+            conn = DriverManager.getConnection(url, user, password);
+        } catch (SQLException e) {
+            System.out.println(<span class="hljs-string">&quot;Ошибка подключения к базе данных: &quot;</span> + e.getMessage());
+        }
+
+        <span class="hljs-built_in">return</span> conn;
+    }
+
+
+    private static void createTable(Connection conn) {
+        String sql = <span class="hljs-string">&quot;&quot;</span><span class="hljs-string">&quot;
+            CREATE TABLE IF NOT EXISTS Words (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                word VARCHAR(255) NOT NULL
+            );
+        &quot;</span><span class="hljs-string">&quot;&quot;</span>;
+
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            System.out.println(<span class="hljs-string">&quot;Ошибка создания таблицы: &quot;</span> + e.getMessage());
+        }
+    }
+
+    private static void saveWord(Connection conn, String word) {
+        String sql = <span class="hljs-string">&quot;INSERT INTO Words (word) VALUES (?)&quot;</span>;
+
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, word);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println(<span class="hljs-string">&quot;Ошибка сохранения слова: &quot;</span> + e.getMessage());
+        }
+    }
+
+    public static void main(String[] args) {
+
+        Connection conn = connect();
+
+        <span class="hljs-keyword">if</span> (conn == null) {
+            System.out.println(<span class="hljs-string">&quot;Не удалось подключиться к базе данных. Программа завершена.&quot;</span>);
+            <span class="hljs-built_in">return</span>;
+        }
+
+        createTable(conn);
+
+        Scanner scanner = new Scanner(System.in);
+        System.out.print(<span class="hljs-string">&quot;Введите слово: &quot;</span>);
+        String word = scanner.nextLine();
+
+
+        System.out.println(<span class="hljs-string">&quot;Ваше слово:&quot;</span>);
+        <span class="hljs-keyword">for</span> (int i = 0; i &lt; 6; i++) {
+            System.out.println(word);
+        }
+
+
+        saveWord(conn, word);
+        System.out.println(<span class="hljs-string">&quot;Слово успешно сохранено в базу данных.&quot;</span>);
+
+
+        try {
+            conn.close();
+        } catch (SQLException e) {
+            System.out.println(<span class="hljs-string">&quot;Ошибка закрытия подключения: &quot;</span> + e.getMessage());
+        }
+
+        scanner.close();
+    }
+}</code></pre>
+<p>8..Разработать программу для вывода на экран кубов первых десяти положительных чисел.<br />
+<a href="https://github.com/gavalone/for_work/blob/main/src/Task_8.java">Решение</a></p>
+<pre><code>package com.<span class="hljs-property">example</span>.<span class="hljs-property">demo</span>;
+
+<span class="hljs-keyword">import</span> javax.<span class="hljs-property">swing</span>.*;
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">Task_8</span> {
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">main</span>(<span class="hljs-params"><span class="hljs-built_in">String</span>[] args</span>){
+        JFrame frame = <span class="hljs-keyword">new</span> <span class="hljs-title function_">JFrame</span>(<span class="hljs-string">&quot;Задание 8&quot;</span>);
+        frame.<span class="hljs-title function_">setDefaultCloseOperation</span>(JFrame.<span class="hljs-property">EXIT_ON_CLOSE</span>);
+        frame.<span class="hljs-title function_">setSize</span>(<span class="hljs-number">300</span>, <span class="hljs-number">400</span>);
+
+        JTextArea textArea = <span class="hljs-keyword">new</span> <span class="hljs-title function_">JTextArea</span>();
+        textArea.<span class="hljs-title function_">setEditable</span>(<span class="hljs-literal">false</span>); <span class="hljs-comment">// только для чтения</span>
+
+        <span class="hljs-title class_">StringBuilder</span> taskText = <span class="hljs-keyword">new</span> <span class="hljs-title class_">StringBuilder</span>(<span class="hljs-string">&quot; Кубы первых десяти положительных чисел: \n&quot;</span>);
+
+        <span class="hljs-keyword">for</span> (int i = <span class="hljs-number">1</span>; i &lt; <span class="hljs-number">11</span>; i++){
+            int result = i * i * i;
+            taskText.<span class="hljs-title function_">append</span>(i).<span class="hljs-title function_">append</span>(<span class="hljs-string">&quot;^3 = &quot;</span>).<span class="hljs-title function_">append</span>(result).<span class="hljs-title function_">append</span>(<span class="hljs-string">&quot;\n&quot;</span>);
+        }
+
+        textArea.<span class="hljs-title function_">setText</span>(taskText.<span class="hljs-title function_">toString</span>());
+        frame.<span class="hljs-title function_">add</span>(textArea);
+        frame.<span class="hljs-title function_">setVisible</span>(<span class="hljs-literal">true</span>);
+    }
+
+}</code></pre>
+<p>9.. Напишите программу, которая по дате определяет день недели, на который эта дата приходится.<br />
+<a href="https://github.com/itsvakonst/javaexam/blob/main/Task9.java">Решение</a></p>
+<pre><code><span class="hljs-comment">// Напишите программу, которая по дате определяет день недели, на который эта дата приходится.</span>
+
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">time</span>.<span class="hljs-property">LocalDate</span>;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">time</span>.<span class="hljs-property">format</span>.<span class="hljs-property">DateTimeFormatter</span>;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">time</span>.<span class="hljs-property">format</span>.<span class="hljs-property">DateTimeParseException</span>;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">util</span>.<span class="hljs-property">Scanner</span>;
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">Main</span> {
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">main</span>(<span class="hljs-params"><span class="hljs-built_in">String</span>[] args</span>) {
+        <span class="hljs-title class_">Scanner</span> scanner = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Scanner</span>(<span class="hljs-title class_">System</span>.<span class="hljs-property">in</span>);
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Введите дату в формате ДД.ММ.ГГГГ (например, 01.01.2025):&quot;</span>);
+
+        <span class="hljs-keyword">try</span> {
+            <span class="hljs-comment">// Чтение даты из ввода пользователя</span>
+            <span class="hljs-title class_">String</span> inputDate = scanner.<span class="hljs-title function_">nextLine</span>();
+            <span class="hljs-title class_">DateTimeFormatter</span> formatter = <span class="hljs-title class_">DateTimeFormatter</span>.<span class="hljs-title function_">ofPattern</span>(<span class="hljs-string">&quot;dd.MM.yyyy&quot;</span>);
+
+            <span class="hljs-comment">// Преобразование строки в объект LocalDate</span>
+            <span class="hljs-title class_">LocalDate</span> date = <span class="hljs-title class_">LocalDate</span>.<span class="hljs-title function_">parse</span>(inputDate, formatter);
+
+            <span class="hljs-comment">// Определение дня недели</span>
+            <span class="hljs-title class_">String</span> dayOfWeek = date.<span class="hljs-title function_">getDayOfWeek</span>().<span class="hljs-title function_">toString</span>();
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;День недели: &quot;</span> + <span class="hljs-title function_">translateDayOfWeek</span>(dayOfWeek));
+        } <span class="hljs-keyword">catch</span> (<span class="hljs-title class_">DateTimeParseException</span> e) {
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Неверный формат даты. Попробуйте снова.&quot;</span>);
+        }
+    }
+
+    <span class="hljs-comment">// Метод для перевода дня недели на русский язык</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-title class_">String</span> <span class="hljs-title function_">translateDayOfWeek</span>(<span class="hljs-params"><span class="hljs-built_in">String</span> dayOfWeek</span>) {
+        <span class="hljs-keyword">switch</span> (dayOfWeek) {
+            <span class="hljs-keyword">case</span> <span class="hljs-string">&quot;MONDAY&quot;</span>:
+                <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;Понедельник&quot;</span>;
+            <span class="hljs-keyword">case</span> <span class="hljs-string">&quot;TUESDAY&quot;</span>:
+                <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;Вторник&quot;</span>;
+            <span class="hljs-keyword">case</span> <span class="hljs-string">&quot;WEDNESDAY&quot;</span>:
+                <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;Среда&quot;</span>;
+            <span class="hljs-keyword">case</span> <span class="hljs-string">&quot;THURSDAY&quot;</span>:
+                <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;Четверг&quot;</span>;
+            <span class="hljs-keyword">case</span> <span class="hljs-string">&quot;FRIDAY&quot;</span>:
+                <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;Пятница&quot;</span>;
+            <span class="hljs-keyword">case</span> <span class="hljs-string">&quot;SATURDAY&quot;</span>:
+                <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;Суббота&quot;</span>;
+            <span class="hljs-keyword">case</span> <span class="hljs-string">&quot;SUNDAY&quot;</span>:
+                <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;Воскресенье&quot;</span>;
+            <span class="hljs-attr">default</span>:
+                <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;Неизвестный день&quot;</span>;
+        }
+    }
+}</code></pre>
+<p>10.. Написать класс, который при введении даты в формате ДД.ММ.ГГ (к примеру, 22.10.20) выводит номер недели. Даты начиная с 2020 по 2022 годы. К примеру, первая неделя в 2020 году: 1-5 января, вторая неделя – 6-12 января. Значит при вводе 08.01.20 вывод должен быть: Неделя 2.<br />
+<a href="https://github.com/Delia0001/java_exam/blob/main/Task_10.java">Решение</a></p>
+<pre><code><span class="hljs-comment">//Написать класс, который при введении даты в формате ДД.ММ.ГГ (к примеру, 22.10.20) выводит номер недели. </span>
+<span class="hljs-comment">//Даты начиная с 2020 по 2022 годы. К примеру, первая неделя в 2020 году: 1-5 января, вторая неделя – 6-12 января. </span>
+<span class="hljs-comment">//Значит при вводе 08.01.20 вывод должен быть: Неделя 2.</span>
+
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">time</span>.<span class="hljs-property">LocalDate</span>;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">time</span>.<span class="hljs-property">format</span>.<span class="hljs-property">DateTimeFormatter</span>;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">time</span>.<span class="hljs-property">temporal</span>.<span class="hljs-property">WeekFields</span>;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">util</span>.<span class="hljs-property">Locale</span>;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">util</span>.<span class="hljs-property">Scanner</span>;
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">Main</span> {
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">main</span>(<span class="hljs-params"><span class="hljs-built_in">String</span>[] args</span>) {
+        <span class="hljs-title class_">Scanner</span> scanner = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Scanner</span>(<span class="hljs-title class_">System</span>.<span class="hljs-property">in</span>);
+        <span class="hljs-title class_">DateTimeFormatter</span> formatter = <span class="hljs-title class_">DateTimeFormatter</span>.<span class="hljs-title function_">ofPattern</span>(<span class="hljs-string">&quot;dd.MM.yy&quot;</span>);
+
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Введите дату в формате ДД.ММ.ГГ (например, 08.01.20).&quot;</span>);
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите дату: &quot;</span>);
+
+        <span class="hljs-title class_">String</span> input = scanner.<span class="hljs-title function_">nextLine</span>();
+
+        <span class="hljs-keyword">try</span> {
+            <span class="hljs-comment">// Преобразуем строку в объект LocalDate</span>
+            <span class="hljs-title class_">LocalDate</span> date = <span class="hljs-title class_">LocalDate</span>.<span class="hljs-title function_">parse</span>(input, formatter);
+
+            <span class="hljs-comment">// Проверяем диапазон годов</span>
+            <span class="hljs-keyword">if</span> (date.<span class="hljs-title function_">getYear</span>() &lt; <span class="hljs-number">2020</span> || date.<span class="hljs-title function_">getYear</span>() &gt; <span class="hljs-number">2022</span>) {
+                <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Ошибка: введите дату в диапазоне с 2020 по 2022 год.&quot;</span>);
+            }
+
+            <span class="hljs-comment">// Получаем номер недели</span>
+            int weekNumber = <span class="hljs-title function_">getWeekNumber</span>(date);
+
+            <span class="hljs-comment">// Выводим результат</span>
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Неделя &quot;</span> + weekNumber);
+        } 
+        <span class="hljs-keyword">catch</span> (<span class="hljs-title class_">Exception</span> e) {
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Ошибка: неверный формат даты. Убедитесь, что используете ДД.ММ.ГГ.&quot;</span>);
+        }
+    }
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> int <span class="hljs-title function_">getWeekNumber</span>(<span class="hljs-params">LocalDate date</span>) {
+        <span class="hljs-comment">// Определяем, что неделя начинается с понедельника</span>
+        <span class="hljs-title class_">WeekFields</span> weekFields = <span class="hljs-title class_">WeekFields</span>.<span class="hljs-title function_">of</span>(<span class="hljs-title class_">Locale</span>.<span class="hljs-title function_">getDefault</span>());
+
+        <span class="hljs-comment">// Вычисляем номер недели</span>
+        <span class="hljs-keyword">return</span> date.<span class="hljs-title function_">get</span>(weekFields.<span class="hljs-title function_">weekOfWeekBasedYear</span>());
+    }
+}</code></pre>
+<p>11.. Разработайте программу, реализующую рекурсивное вычисление факториала. <br />
+<a href="https://github.com/NafaNaniz/exam/blob/main/RecursiveFactorial.java">Решение</a></p>
+<pre><code><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">RecursiveFactorial</span> {
+    <span class="hljs-keyword">static</span> int factorial (int n){
+        <span class="hljs-keyword">if</span> (n == <span class="hljs-number">0</span> || n == <span class="hljs-number">1</span>){
+            <span class="hljs-keyword">return</span> <span class="hljs-number">1</span>;
+        }
+        <span class="hljs-keyword">return</span> n * <span class="hljs-title function_">factorial</span>(n - <span class="hljs-number">1</span>);
+    }
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">main</span>(<span class="hljs-params"><span class="hljs-built_in">String</span>[] args</span>) {
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-title function_">factorial</span>(<span class="hljs-number">3</span>));
+    }
+}</code></pre>
+<p>12.. Разработать класс-оболочку для числового типа double. Реализовать статические методы сложения, деления, возведения в степень.<br />
+<a href="https://github.com/AliceAnd0/java_exam/blob/main/DoubleWrapper.java">Решение</a></p>
+<pre><code><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">DoubleWrapper</span> {
+    <span class="hljs-keyword">private</span> double value;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-title class_">DoubleWrapper</span>(double value) {
+        <span class="hljs-variable language_">this</span>.<span class="hljs-property">value</span> = value;
+    }
+
+    <span class="hljs-keyword">public</span> double <span class="hljs-title function_">getValue</span>(<span class="hljs-params"></span>) {
+        <span class="hljs-keyword">return</span> value;
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">setValue</span>(<span class="hljs-params">double value</span>) {
+        <span class="hljs-variable language_">this</span>.<span class="hljs-property">value</span> = value;
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> double <span class="hljs-title function_">add</span>(<span class="hljs-params">double a, double b</span>) {
+        <span class="hljs-keyword">return</span> a + b;
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> double <span class="hljs-title function_">divide</span>(<span class="hljs-params">double a, double b</span>) {
+        <span class="hljs-keyword">if</span> (b == <span class="hljs-number">0</span>) {
+            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArithmeticException</span>(<span class="hljs-string">&quot;Division by zero is not allowed.&quot;</span>);
+        }
+        <span class="hljs-keyword">return</span> a / b;
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> double <span class="hljs-title function_">power</span>(<span class="hljs-params">double base, double exponent</span>) {
+        <span class="hljs-keyword">return</span> <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">pow</span>(base, exponent);
+    }
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-title class_">String</span> <span class="hljs-title function_">toString</span>(<span class="hljs-params"></span>) {
+        <span class="hljs-keyword">return</span> <span class="hljs-string">&quot;DoubleWrapper{value=&quot;</span> + value + <span class="hljs-string">&quot;}&quot;</span>;
+    }
+
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">main</span>(<span class="hljs-params"><span class="hljs-built_in">String</span>[] args</span>) {
+        <span class="hljs-title class_">DoubleWrapper</span> num1 = <span class="hljs-keyword">new</span> <span class="hljs-title class_">DoubleWrapper</span>(<span class="hljs-number">5.0</span>);
+        <span class="hljs-title class_">DoubleWrapper</span> num2 = <span class="hljs-keyword">new</span> <span class="hljs-title class_">DoubleWrapper</span>(<span class="hljs-number">2.0</span>);
+
+        <span class="hljs-comment">// Использование статических методов</span>
+        double sum = <span class="hljs-title class_">DoubleWrapper</span>.<span class="hljs-title function_">add</span>(num1.<span class="hljs-title function_">getValue</span>(), num2.<span class="hljs-title function_">getValue</span>());
+        double division = <span class="hljs-title class_">DoubleWrapper</span>.<span class="hljs-title function_">divide</span>(num1.<span class="hljs-title function_">getValue</span>(), num2.<span class="hljs-title function_">getValue</span>());
+        double exponentiation = <span class="hljs-title class_">DoubleWrapper</span>.<span class="hljs-title function_">power</span>(num1.<span class="hljs-title function_">getValue</span>(), num2.<span class="hljs-title function_">getValue</span>());
+
+        <span class="hljs-comment">// Вывод результатов</span>
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Сложение: &quot;</span> + sum);
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Деление: &quot;</span> + division);
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Возведение в степень: &quot;</span> + exponentiation);
+    }
+}</code></pre>
+<p>13.. Разработать программу, которая заполняет двумерный массив случайными положительными числами в диапазоне от 1 до 100 до тех пор, пока сумма граничных элементов не станет равной 666. Пользователь вначале вводит размер матрицы.<br />
+<a href="https://github.com/polinatut/exem_java/blob/main/ex_13/MatrixSum.java">Решение</a></p>
+<pre><code><span class="hljs-keyword">import</span> java.<span class="hljs-property">util</span>.<span class="hljs-property">Random</span>;
+<span class="hljs-keyword">import</span> java.<span class="hljs-property">util</span>.<span class="hljs-property">Scanner</span>;
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MatrixSum</span> {
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">main</span>(<span class="hljs-params"><span class="hljs-built_in">String</span>[] args</span>) {
+        <span class="hljs-title class_">Scanner</span> scanner = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Scanner</span>(<span class="hljs-title class_">System</span>.<span class="hljs-property">in</span>);
+        <span class="hljs-title class_">Random</span> random = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Random</span>();
+
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите количество строк матрицы: &quot;</span>);
+        int rows = scanner.<span class="hljs-title function_">nextInt</span>();
+
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(<span class="hljs-string">&quot;Введите количество столбцов матрицы: &quot;</span>);
+        int cols = scanner.<span class="hljs-title function_">nextInt</span>();
+
+        <span class="hljs-keyword">if</span> (rows &lt; <span class="hljs-number">2</span> || cols &lt; <span class="hljs-number">2</span>) {
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Размер матрицы должен быть не менее 2x2.&quot;</span>);
+            <span class="hljs-keyword">return</span>;
+        }
+
+        int[][] matrix = <span class="hljs-keyword">new</span> int[rows][cols];
+        int borderSum = <span class="hljs-number">0</span>;
+        int attempts = <span class="hljs-number">0</span>; 
+        final int <span class="hljs-variable constant_">MAX_ATTEMPTS</span> = <span class="hljs-number">10000000</span>; 
+
+        <span class="hljs-keyword">while</span> (borderSum != <span class="hljs-number">666</span> &amp;&amp; attempts &lt; <span class="hljs-variable constant_">MAX_ATTEMPTS</span>) {
+            <span class="hljs-keyword">for</span> (int i = <span class="hljs-number">0</span>; i &lt; rows; i++) {
+                <span class="hljs-keyword">for</span> (int j = <span class="hljs-number">0</span>; j &lt; cols; j++) {
+                    matrix[i][j] = random.<span class="hljs-title function_">nextInt</span>(<span class="hljs-number">100</span>) + <span class="hljs-number">1</span>;
+                }
+            }
+
+            borderSum = <span class="hljs-title function_">calculateBorderSum</span>(matrix, rows, cols);
+            attempts++;
+        }
+
+        <span class="hljs-keyword">if</span> (borderSum == <span class="hljs-number">666</span>) {
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Матрица, где сумма граничных элементов равна 666:&quot;</span>);
+            <span class="hljs-title function_">printMatrix</span>(matrix);
+        } <span class="hljs-keyword">else</span> {
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Не удалось найти подходящую матрицу за &quot;</span> + <span class="hljs-variable constant_">MAX_ATTEMPTS</span> + <span class="hljs-string">&quot; попыток.&quot;</span>);
+        }
+    }
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> int <span class="hljs-title function_">calculateBorderSum</span>(<span class="hljs-params">int[][] matrix, int rows, int cols</span>) {
+        int sum = <span class="hljs-number">0</span>;
+
+        <span class="hljs-keyword">for</span> (int j = <span class="hljs-number">0</span>; j &lt; cols; j++) {
+            sum += matrix[<span class="hljs-number">0</span>][j]; 
+            sum += matrix[rows - <span class="hljs-number">1</span>][j]; 
+        }
+
+        <span class="hljs-keyword">for</span> (int i = <span class="hljs-number">1</span>; i &lt; rows - <span class="hljs-number">1</span>; i++) {
+            sum += matrix[i][<span class="hljs-number">0</span>]; 
+            sum += matrix[i][cols - <span class="hljs-number">1</span>]; 
+        }
+
+        <span class="hljs-keyword">return</span> sum;
+    }
+
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">printMatrix</span>(<span class="hljs-params">int[][] matrix</span>) {
+        <span class="hljs-keyword">for</span> (int[] row : matrix) {
+            <span class="hljs-keyword">for</span> (int value : row) {
+                <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">print</span>(value + <span class="hljs-string">&quot; &quot;</span>);
+            }
+            <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>();
+        }
+    }
+}</code></pre>
+<p>14.. Разработать программу, в которой требуется создать класс, описывающий геометрическую фигуру – треугольник. Методами класса должны быть – вычисление площади, периметра. Создать класс-наследник, определяющий прямоугольный треугольник.<br />
+<a href="https://github.com/mirrrler/task14">Решение</a></p>
+<pre><code><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">Main</span> {
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">main</span>(<span class="hljs-params"><span class="hljs-built_in">String</span>[] args</span>) {
+        <span class="hljs-comment">// Создаем треугольник</span>
+        <span class="hljs-title class_">Triangle</span> triangle = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Triangle</span>(<span class="hljs-number">3</span>, <span class="hljs-number">4</span>, <span class="hljs-number">5</span>);
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Треугольник:&quot;</span>);
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Периметр: &quot;</span> + triangle.<span class="hljs-title function_">getPerimeter</span>());
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Площадь: &quot;</span> + triangle.<span class="hljs-title function_">getArea</span>());
+
+        <span class="hljs-comment">// Создаем прямоугольный треугольник</span>
+        <span class="hljs-title class_">RightTriangle</span> rightTriangle = <span class="hljs-keyword">new</span> <span class="hljs-title class_">RightTriangle</span>(<span class="hljs-number">3</span>, <span class="hljs-number">4</span>);
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;\nПрямоугольный треугольник:&quot;</span>);
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Периметр: &quot;</span> + rightTriangle.<span class="hljs-title function_">getPerimeter</span>());
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Площадь: &quot;</span> + rightTriangle.<span class="hljs-title function_">getArea</span>());
+    }
+}</code></pre>
+<pre><code><span class="hljs-keyword">class</span> <span class="hljs-title class_">RightTriangle</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_ inherited__">Triangle</span> {
+    <span class="hljs-comment">// Конструктор</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-title class_">RightTriangle</span>(double base, double height) {
+        <span class="hljs-variable language_">super</span>(base, height, <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">sqrt</span>(base * base + height * height)); <span class="hljs-comment">// c = √(a² + b²)</span>
+    }
+
+    <span class="hljs-comment">// Переопределение метода для вычисления площади</span>
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">public</span> double <span class="hljs-title function_">getArea</span>(<span class="hljs-params"></span>) {
+        <span class="hljs-keyword">return</span> (a * b) / <span class="hljs-number">2</span>; <span class="hljs-comment">// Площадь прямоугольного треугольника</span>
+    }
+}</code></pre>
+<pre><code><span class="hljs-keyword">class</span> <span class="hljs-title class_">Triangle</span> {
+    <span class="hljs-keyword">protected</span> double a; <span class="hljs-comment">// Сторона a</span>
+    <span class="hljs-keyword">protected</span> double b; <span class="hljs-comment">// Сторона b</span>
+    <span class="hljs-keyword">protected</span> double c; <span class="hljs-comment">// Сторона c</span>
+
+    <span class="hljs-comment">// Конструктор</span>
+    <span class="hljs-keyword">public</span> <span class="hljs-title class_">Triangle</span>(double a, double b, double c) {
+        <span class="hljs-variable language_">this</span>.<span class="hljs-property">a</span> = a;
+        <span class="hljs-variable language_">this</span>.<span class="hljs-property">b</span> = b;
+        <span class="hljs-variable language_">this</span>.<span class="hljs-property">c</span> = c;
+    }
+
+    <span class="hljs-comment">// Метод для вычисления периметра</span>
+    <span class="hljs-keyword">public</span> double <span class="hljs-title function_">getPerimeter</span>(<span class="hljs-params"></span>) {
+        <span class="hljs-keyword">return</span> a + b + c;
+    }
+
+    <span class="hljs-comment">// Метод для вычисления площади по формуле Герона</span>
+    <span class="hljs-keyword">public</span> double <span class="hljs-title function_">getArea</span>(<span class="hljs-params"></span>) {
+        double s = <span class="hljs-title function_">getPerimeter</span>() / <span class="hljs-number">2</span>; <span class="hljs-comment">// Полупериметр</span>
+        <span class="hljs-keyword">return</span> <span class="hljs-title class_">Math</span>.<span class="hljs-title function_">sqrt</span>(s * (s - a) * (s - b) * (s - c));
+    }
+}</code></pre>
+<p>15.. Разработать программу, в которой требуется создать абстрактный класс. В этом абстрактном классе определить абстрактные методы вычисления функции в определенной точке. Создать классы-наследники абстрактного класса, описывающими уравнения прямой и параболы. Программа должна выводить в консоль значение функции при вводе определенного значения.<br />
+<a href="https://github.com/dariadegt/java_exam/blob/main/Task_15.java">Решение</a></p>
+<pre><code><span class="hljs-keyword">import</span> java.<span class="hljs-property">util</span>.<span class="hljs-property">Scanner</span>;
+
+<span class="hljs-keyword">abstract</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">Function</span> {
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">abstract</span> double <span class="hljs-title function_">calculate</span>(double x);
+}
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">LinearFunction</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_ inherited__">Function</span> {
+    <span class="hljs-keyword">private</span> double a, b;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-title class_">LinearFunction</span>(double a, double b) {
+        <span class="hljs-variable language_">this</span>.<span class="hljs-property">a</span> = a;
+        <span class="hljs-variable language_">this</span>.<span class="hljs-property">b</span> = b;
+    }
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">public</span> double <span class="hljs-title function_">calculate</span>(<span class="hljs-params">double x</span>) {
+        <span class="hljs-keyword">return</span> a * x + b;
+    }
+}
+
+<span class="hljs-keyword">class</span> <span class="hljs-title class_">QuadraticFunction</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_ inherited__">Function</span> {
+    <span class="hljs-keyword">private</span> double a, b, c;
+
+    <span class="hljs-keyword">public</span> <span class="hljs-title class_">QuadraticFunction</span>(double a, double b, double c) {
+        <span class="hljs-variable language_">this</span>.<span class="hljs-property">a</span> = a;
+        <span class="hljs-variable language_">this</span>.<span class="hljs-property">b</span> = b;
+        <span class="hljs-variable language_">this</span>.<span class="hljs-property">c</span> = c;
+    }
+
+    <span class="hljs-meta">@Override</span>
+    <span class="hljs-keyword">public</span> double <span class="hljs-title function_">calculate</span>(<span class="hljs-params">double x</span>) {
+        <span class="hljs-keyword">return</span> a * x * x + b * x + c;
+    }
+}
+
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">Task_15</span> {
+    <span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-built_in">void</span> <span class="hljs-title function_">main</span>(<span class="hljs-params"><span class="hljs-built_in">String</span>[] args</span>) {
+        <span class="hljs-title class_">Scanner</span> scanner = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Scanner</span>(<span class="hljs-title class_">System</span>.<span class="hljs-property">in</span>);
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Введите значение x: &quot;</span>);
+        double x = scanner.<span class="hljs-title function_">nextDouble</span>();
+
+        <span class="hljs-title class_">Function</span> linear = <span class="hljs-keyword">new</span> <span class="hljs-title class_">LinearFunction</span>(<span class="hljs-number">2</span>, <span class="hljs-number">3</span>);
+        <span class="hljs-title class_">Function</span> quadratic = <span class="hljs-keyword">new</span> <span class="hljs-title class_">QuadraticFunction</span>(<span class="hljs-number">1</span>, -<span class="hljs-number">2</span>, <span class="hljs-number">1</span>);
+
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Значение линейной функции: &quot;</span> + linear.<span class="hljs-title function_">calculate</span>(x));
+        <span class="hljs-title class_">System</span>.<span class="hljs-property">out</span>.<span class="hljs-title function_">println</span>(<span class="hljs-string">&quot;Значение квадратичной функции: &quot;</span> + quadratic.<span class="hljs-title function_">calculate</span>(x));
+    }
+}</code></pre>
+<p>16.. Создать интерфейс Progress c методами вычисления любого элемента прогрессии и суммы прогрессии. Разработать классы арифметической и геометрической прогрессии, которые имплементируют интерфейс Progress.<br />
+<a href="https://github.com/max33128/tasks">https://github.com/max33128/tasks</a></p>
+<p>17..Разработать интерфейс InArray, в котором предусмотреть метод сложения двух массивов. Создать класс ArraySum, в котором имплементируется метод сложения массивов. Создать класс OrArray, в котором метод сложения массивов имплементируется как логическая операция ИЛИ между элементами массива.<br />
+<a href="https://github.com/bshkrrr/java_exam/tree/main/src/main/java/com/example/demo">https://github.com/bshkrrr/java_exam/tree/main/src/main/java/com/example/demo</a></p>
+<p>18.. Создать класс Binary для работы с двоичными числами фиксированной длины. Число должно быть массивом тип char, каждый элемент которого принимает значение 0 или 1. Младший бит имеет младший индекс. Отрицательные числа представляются в дополнительном коде. Дополнительный код получается инверсией всех битов с прибавлением 1 к младшему биту. Например, +1 – это в двоичном коде будет выглядеть, как 0000 0001. А -1 в двоичном коде будет выглядеть, как 1111 1110 + 0000 0001 = 1111 1111. Создать методы конвертации десятичного числа в массив и обратно.<br />
+<a href="https://github.com/flamingo99900/JavaEkz/tree/task_18">https://github.com/flamingo99900/JavaEkz/tree/task_18</a> </p>
+<p>19.. Создать класс Matrix для работы с двумерными матрицами. Создать методы для генерации нулевой матрицы, а также для генерации матрицы со случайными величинами – применить Math.random(). Реализовать метод сложения матриц.<br />
+<a href="https://github.com/gavalone/for_work/blob/main/src/Matrix.java">https://github.com/gavalone/for_work/blob/main/src/Matrix.java</a> </p>
+<p>20.. Реализовать класс MyMath для работы с числами. Реализовать статический метод класса MyMath.round(), который округляет дробь до целого числа. Также статический метод abs(), который находит модуль числа. Статический метод MyMath.pow() для нахождения степени числа. Библиотеку Math не использовать.<br />
+<a href="https://github.com/itsvakonst/javaexam/blob/main/Task20.java">https://github.com/itsvakonst/javaexam/blob/main/Task20.java</a></p>
+<p>21.. Разработать программу для игры «Угадайка». Программа загадывает случайное число от 1 до 10, требуется его отгадать с трех попыток. После каждой попытки, если результат неверен, игроку выводится сообщение, меньше или больше названное игроком число, чем загаданное. Сет заканчивается или если игрок угадывает число, или если исчерпывает три попытки, не угадав. Игра должна быть выполнена в бесконечном цикле, и продолжается до тех пор, пока на предложение «Сыграем еще раз?» игрок не напишет «Нет».<br />
+<a href="https://github.com/Delia0001/java_exam/blob/main/Task_21.java">https://github.com/Delia0001/java_exam/blob/main/Task_21.java</a> </p>
+<p>22.. Разработайте программу-генератор рабочего календаря. Слесарь механосборочного цеха работает сутки через трое. Если смена попадает на воскресенье, то переносится на понедельник. По введенной дате программа должна генерировать расписание из дат на текущий месяц на 2022 год.<br />
+<a href="https://github.com/NafaNaniz/exam/blob/main/WorkScheduleGenerator.java">https://github.com/NafaNaniz/exam/blob/main/WorkScheduleGenerator.java</a></p>
+<p>23.. Разработать класс для представления комплексных чисел с возможностью задания вещественной и мнимой частей в виде массива из двух чисел типа int. Определить методы для выполнения операций сложения, вычитания и умножения комплексных чисел.<br />
+<a href="https://github.com/AliceAnd0/java_exam/blob/main/ComplexNumber.java">https://github.com/AliceAnd0/java_exam/blob/main/ComplexNumber.java</a></p>
+<p>24.. Создайте класс Form - оболочку для создания и ввода пароля. Он должен иметь методы input, submit, password. Создайте класс SmartForm, который будет наследовать от Form и сохранять значения password.<br />
+<a href="https://github.com/polinatut/exem_java/tree/main/ex_24">https://github.com/polinatut/exem_java/tree/main/ex_24</a> </p>
+<p>25.. Сделайте класс User, в котором будут следующие protected поля - name (имя), age (возраст), public методы setName, getName, setAge, getAge. Сделайте класс Worker, который наследует от класса User и вносит дополнительное private поле salary (зарплата), а также методы public getSalary и setSalary. Создайте объект этого класса 'Иван', возраст 25, зарплата 1000. Создайте второй объект этого класса 'Вася', возраст 26, зарплата 2000. Найдите сумму зарплата Ивана и Васи. Сделайте класс Student, который наследует от класса User и вносит дополнительные private поля стипендия, курс, а также геттеры и сеттеры для них.<br />
+<a href="https://github.com/mirrrler/task25">https://github.com/mirrrler/task25</a></p>
+<p>26..Создайте класс ColorModel для определения цветовой модели. Разработайте подклассы RGBconverter и CMYKconverter для конвертации цвета из одной модели в другую. Конвертация CMYK в RGB производится по следующим формулам: R = 255 × (1-C) × (1-K), G = 255 × (1-M) × (1-K), B = 255 × (1-Y) × (1-K) (где R – red, G – green, B – black, C – Cyan, M - Magenta, Y - Yellow, K- Black))<br />
+<a href="https://github.com/dariadegt/java_exam/blob/main/Task_26.java">https://github.com/dariadegt/java_exam/blob/main/Task_26.java</a></p>
+<p>27.. Создайте класс Number для конвертации десятичного числа в бинарный, восьмеричный, шестнадцатеричный вид. Реализовать в виде статических методов класса. Числа вводятся с клавиатуры с запросом в какой численный вид конвертировать.<br />
+<a href="https://github.com/gavalone/for_work/blob/main/src/Number.java">https://github.com/gavalone/for_work/blob/main/src/Number.java</a> </p>
+<p>28.. Разработать класс Neuron для реализации нейронной сети из двух нейронов и одного выхода. Сделать функцию прямого распространения с функцией активации в виде сигмоиды.<br />
+не стала даже комменты убирать чтобы хоть чето было понятно<br />
+<a href="https://github.com/bshkrrr/java_exam/tree/main/src/main/java/com/example/demo">https://github.com/bshkrrr/java_exam/tree/main/src/main/java/com/example/demo</a></p>
+<p>29.. Напишите программу, которая заполняет списочный массив случайными числами типа Integer (значения этих чисел были от 1 до 100). Список должен содержать 100 элементов. Затем отсортируйте по убыванию список и выведите первые 10 значений в консоль. Результаты сохраните в MySQL/PostgreSQL.<br />
+<a href="https://github.com/flamingo99900/JavaEkz/tree/task_29">https://github.com/flamingo99900/JavaEkz/tree/task_29</a> </p>
+<p>30.. Разработайте программу, которая заполняет список случайными числами. Количество элементов и числовой диапазон вводятся пользователем. Программа должна проверять, входит ли число (также вводится пользователем) в данный список. Должен быть реализован бинарный поиск. Результаты должны сохраняться в MySQL/PostgreSQL и выводиться оттуда же.<br />
+<a href="https://github.com/max33128/tasks">https://github.com/max33128/tasks</a></p>
+<p>31.. На основе класса BitSet разработайте программу для реализации битовых операций AND, OR, XOR, а также маскирования.<br />
+<a href="https://github.com/itsvakonst/javaexam/blob/main/Task31.java">https://github.com/itsvakonst/javaexam/blob/main/Task31.java</a></p>
+<p>32.. Напишите программу, которая получает в качестве входных данных два числа. Эти числа являются количество строк и столбцов двумерной коллекции целых чисел. Далее элементы заполняются случайными числами и выводятся в консоль в виде таблицы.<br />
+<a href="https://github.com/Delia0001/java_exam/blob/main/Task_32.java">https://github.com/Delia0001/java_exam/blob/main/Task_32.java</a> </p>
+<p>33.. Разработайте программу, которая получает в качестве параметра два числа –количество строк и столбцов двумерной коллекции целых чисел. Коллекция заполняется случайными числами, после чего на экран выводятся максимальное и минимальное значения с индексами ячеек.<br />
+<a href="https://github.com/NafaNaniz/exam/blob/main/Array2D.java">https://github.com/NafaNaniz/exam/blob/main/Array2D.java</a></p>
+<p>34.. Разработайте программу, в которой создайте две коллекции с именами людей (строковые переменные). Результат сохранить в MySQL/PostgreSQL. Затем последовательно выводите в консоль имена.<br />
+<a href="https://github.com/AliceAnd0/java_exam/tree/main/NamesToDB">https://github.com/AliceAnd0/java_exam/tree/main/NamesToDB</a></p>
+<p>35.. Напишите программу, которая реализует класс Matrix и следующие методы:</p>
+<ul>
+<li>Сложение и вычитание матриц.</li>
+<li>Умножение матрицы на число.</li>
+<li>Произведение двух матриц.</li>
+<li>Транспонированная матрица.</li>
+<li>Возведение матрицы в степень.<br />
+Если метод, возвращает матрицу, то он должен возвращать новый объект, а не менять базовый.<br />
+<a href="https://github.com/polinatut/exem_java/tree/main/ex_35">https://github.com/polinatut/exem_java/tree/main/ex_35</a> </li>
+</ul>
+<p>36.. Разработать программу для поочередной обработки текстовых файлов. Файлы созданы со следующими именами: n.txt, где n – натуральное число. В файлах записаны: в первой строке одно число с плавающей запятой, во второй строке – второе число. Пользователь вводит название файла и требуемую операцию над числами (сложение, умножение, разность). Результат выводится на экран и файл n_out.txt.<br />
+<a href="https://github.com/mirrrler/task36">https://github.com/mirrrler/task36</a></p>
+<p>37.. Написать приложение для сложения, вычитания, умножения, деления, возведения в степень логарифмов. Программа должна выполнять ввод данных, проверку правильности введенных данных, выдачу сообщений в случае ошибок. Результат выводится на экран и записывается в файл.<br />
+<a href="https://github.com/dariadegt/java_exam/blob/main/Task_37.java">https://github.com/dariadegt/java_exam/blob/main/Task_37.java</a></p>
+<p>38.. Разработать программу шифровки-дешифровки по алгоритму AES-128. Данные берутся из файла, зашифрованные данные сохраняются в указанный файл.<br />
+<a href="https://github.com/gavalone/for_work/blob/main/src/Task_38.java">https://github.com/gavalone/for_work/blob/main/src/Task_38.java</a> </p>
+<p>39.. Разработать программу нахождения наибольшего общего делителя двух натуральных чисел. Требуется реализовать рекурсивный и без рекурсии варианты. Результат сохранить в MySQL/PostgreSQL.<br />
+<a href="https://github.com/bshkrrr/java_exam/tree/main/src/main/java/com/example/demo">https://github.com/bshkrrr/java_exam/tree/main/src/main/java/com/example/demo</a></p>
+<p>40.. Напишите программу, которая каждые 5 секунд отображает на экране данные о времени, прошедшем от начала запуска программы, а другой её поток выводит сообщение каждые 7 секунд. Третий поток выводит на экран сообщение каждые 10 секунд. Программа работает одну минуту, затем останавливается. Все результаты после вывода необходимо сохранить в MySQL/PostgreSQL.<br />
+<a href="https://github.com/flamingo99900/JavaEkz/tree/task_40">https://github.com/flamingo99900/JavaEkz/tree/task_40</a> </p>
+<p>41.. Условие задачи: «Ввести две строки (не менее 50 символов каждая) с клавиатуры. Необходимо вывести на экран две введенных ранее строки, подсчитать и вывести размер длины каждой строки, объединить данные строки в одну, сравнить данные строки и результат сравнения вывести на экран». По данному условию необходимо реализовать программу с интерактивным консольным меню, (т.е. вывод списка действий по цифрам. При этом при нажатии на цифру у нас должно выполняться определенное действие). При этом в программе данные пункты должны называться следующим образом:</p>
+<ul>
+<li>Вывести все таблицы из MySQL.</li>
+<li>Создать таблицу в MySQL.</li>
+<li>Ввести две строки с клавиатуры, результат сохранить в MySQL с последующим выводом в консоль.</li>
+<li>Подсчитать размер ранее введенных строк, результат сохранить в MySQL с последующим выводом в консоль.</li>
+<li>Объединить две строки в единое целое, результат сохранить в MySQL с последующим выводом в консоль.</li>
+<li>Сравнить две ранее введенные строки, результат сохранить в MySQL с последующим выводом в консоль.</li>
+<li>Сохранить все данные (вышеполученные результаты) из MySQL в Excel и вывести на экран.<br />
+<a href="https://github.com/max33128/tasks">https://github.com/max33128/tasks</a></li>
+</ul>
+<p>42.. Написать на основе Spring Boot клиент-серверное приложение MyUser, в котором можно управлять данными пользователей из базы данных через веб-интерфейс: имя, фамилия, возраст, номер группы. База данных может быть любой – MySQL, PostgreSQL и т.д. При этом должна быть доступна возможность добавления/удаления/редактирования пользователей.<br />
+<a href="https://github.com/itsvakonst/javaexam/tree/main/Task42/main">https://github.com/itsvakonst/javaexam/tree/main/Task42/main</a></p>
+<p>43.. Написать на основе Spring Boot Security форму для авторизации и регистрации пользователя. При этом после авторизации пользователя должно быть перенаправление на главную страницу. Главная страница должна содержать запись «Hello World!». При этом до авторизации главная страница не должна быть доступна для пользователя.</p>
+<p>Код из main: <a href="https://github.com/Delia0001/java_exam/tree/main/Task43/main">https://github.com/Delia0001/java_exam/tree/main/Task43/main</a> </p>
+<p>Весь проект в формате zip: <a href="https://github.com/Delia0001/java_exam/blob/main/task_43.zip">https://github.com/Delia0001/java_exam/blob/main/task_43.zip</a>  </p>
+<p>44.. Разработать MVC-приложение арифметический калькулятор на основе Spring Boot. Применить шаблонизатор Thymeleaf. Все результаты вычисления должны сохраняться и выводиться из MySQL.<br />
+<a href="https://github.com/NafaNaniz/calc">https://github.com/NafaNaniz/calc</a></p>
+<p>45.. Разработка веб-MVC приложения на основе Spring Boot. Приложение должно генерировать последовательность из 1000 случайных чисел в диапазоне, заданном пользователем, и выводит эти числа на экран и вычисляет их среднее арифметическое.<br />
+<a href="https://github.com/AliceAnd0/java_exam/tree/main/WebMVCRandomNumbers">https://github.com/AliceAnd0/java_exam/tree/main/WebMVCRandomNumbers</a></p>
+<p>46.. Разработать приложение для работы с локальной базой данных MySQL. Создайте базу данных мобильных телефонов (не менее 10 позиций), со следующими полями: производитель, модель, год выпуска, диагональ экрана. Напишите методы для выполнения запросов к базе данных. Все данные должны выводиться в консоли на экран.<br />
+<a href="https://github.com/polinatut/exem_java/tree/main/ex_46">https://github.com/polinatut/exem_java/tree/main/ex_46</a> </p>
+</body>
+</html>
+  
